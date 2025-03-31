@@ -1,16 +1,30 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-
+import { useCreateCommentMutation } from "./use-comments-hooks";
+import { toast } from "sonner";
 export function CommentForm() {
   const [commentText, setCommentText] = useState("");
+
+  const mutation = useCreateCommentMutation();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (!commentText.trim()) return;
 
-    setCommentText("");
+    mutation.mutate(
+      { text: commentText },
+      {
+        onSuccess: () => {
+          setCommentText("");
+          toast.success("Comment posted successfully!");
+        },
+        onError: () => {
+          toast.error("Failed to post comment. Please try again.");
+        },
+      }
+    );
   }
 
   return (
@@ -20,9 +34,13 @@ export function CommentForm() {
         onChange={(e) => setCommentText(e.target.value)}
         placeholder="Add a comment..."
         className="flex-1"
+        disabled={mutation.isPending}
       />
-      <Button type="submit" disabled={!commentText.trim()}>
-        Post
+      <Button
+        type="submit"
+        disabled={!commentText.trim() || mutation.isPending}
+      >
+        {mutation.isPending ? "Posting..." : "Post"}
       </Button>
     </form>
   );
