@@ -5,17 +5,6 @@ export default function Home() {
     <div className="max-w-7xl mx-auto grid grid-rows-[auto_1fr_auto] items-center min-h-screen p-8 pb-20 gap-8 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <header className="flex flex-col items-center mb-12">
         <h1 className="text-4xl font-bold mb-4">React Query Tutorial</h1>
-        <p className="text-lg text-center max-w-3xl">
-          Learn how to use TanStack React Query effectively with this tutorial
-          by{" "}
-          <a
-            href="https://www.youtube.com/c/codinginflow?sub_confirmation=1"
-            className="text-[#4daa57]"
-            target="_blank"
-          >
-            Coding in Flow
-          </a>
-        </p>
       </header>
 
       <main className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
