@@ -1,35 +1,34 @@
+import { postData } from "@/lib/fetch-utils";
 import {
-  useInfiniteQuery,
+  QueryKey,
   useMutation,
   useQueryClient,
-  QueryKey,
   InfiniteData,
 } from "@tanstack/react-query";
-import { fetchData, postData } from "@/lib/fetch-utils";
 import { CommentsResponse } from "../api/comments/route";
 import { Comment } from "../api/comments/data";
 
 const queryKey: QueryKey = ["comments"];
-
-export function useCommentsQuery() {
-  return useInfiniteQuery({
-    queryKey,
-    queryFn: ({ pageParam }) =>
-      fetchData<CommentsResponse>(
-        `/api/comments?${pageParam ? `cursor=${pageParam}` : ""}`
-      ),
-    initialPageParam: undefined as number | undefined,
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-  });
-}
-
-export function useCreateCommentMutation() {
+export function useCreateCommentMutationOptimistic() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (newComment: { text: string }) =>
       postData<{ comment: Comment }>("/api/comments", newComment),
-    onSuccess: async ({ comment }) => {
+    onMutate: async (newCommentData) => {
       await queryClient.cancelQueries({ queryKey });
+      const previousData =
+        queryClient.getQueryData<
+          InfiniteData<CommentsResponse, number | undefined>
+        >(queryKey);
+      const optimisticComment: Comment = {
+        id: Date.now(),
+        text: newCommentData.text,
+        user: {
+          name: "Current User",
+          avatar: "CU",
+        },
+        createdAt: new Date().toISOString(),
+      };
       queryClient.setQueryData<
         InfiniteData<CommentsResponse, number | undefined>
       >(queryKey, (oldData) => {
@@ -40,14 +39,23 @@ export function useCreateCommentMutation() {
             pages: [
               {
                 ...firstPage,
+                comments: [optimisticComment, ...firstPage.comments],
                 totalComments: firstPage.totalComments + 1,
-                comments: [comment, ...firstPage.comments],
               },
               ...oldData.pages.slice(1),
             ],
           };
         }
       });
+      return { previousData };
+    },
+    onError: (error, newCommentData, context) => {
+      queryClient.setQueryData<
+        InfiniteData<CommentsResponse, number | undefined>
+      >(queryKey, context?.previousData);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
     },
   });
 }
